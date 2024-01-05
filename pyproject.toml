@@ -1,5 +1,6 @@
 [project]
-name = "service" # Edit this and remove comment
+
+name = "document-vectorizer" # Edit this and remove comment
 
 [tool.pytest.ini_options]
 pythonpath = [".", "src"]

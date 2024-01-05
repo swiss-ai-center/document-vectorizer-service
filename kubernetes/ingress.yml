@@ -1,22 +1,22 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: my-service-ingress
+  name: document-vectorizer-ingress
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "16m"
     nginx.org/client-max-body-size: "16m"
 spec:
   rules:
-  - host: my-service.example.com
+  - host: document-vectorizer-swiss-ai-center.kube.isc.heia-fr.ch
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: my-service-service
+            name: document-vectorizer-service
             port:
               number: 80
   tls:
     - hosts:
-        - my-service.example.com
+        - document-vectorizer-swiss-ai-center.kube.isc.heia-fr.ch

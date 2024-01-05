@@ -15,19 +15,33 @@ from common_code.tasks.service import TasksService
 from common_code.tasks.models import TaskData
 from common_code.service.models import Service
 from common_code.service.enums import ServiceStatus
-from common_code.common.enums import FieldDescriptionType, ExecutionUnitTagName, ExecutionUnitTagAcronym
+from common_code.common.enums import (
+    FieldDescriptionType,
+    ExecutionUnitTagName,
+    ExecutionUnitTagAcronym,
+)
 from common_code.common.models import FieldDescription, ExecutionUnitTag
 
 # Imports required by the service's model
-# TODO: 1. ADD REQUIRED IMPORTS (ALSO IN THE REQUIREMENTS.TXT)
+from langchain.document_loaders import PyMuPDFLoader
+from langchain.vectorstores import FAISS
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.embeddings import HuggingFaceBgeEmbeddings
+from langchain.callbacks.manager import CallbackManager
+from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from langchain.chains import RetrievalQA
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.schema.document import Document
+import shutil
+import os
+
 
 settings = get_settings()
 
 
 class MyService(Service):
-    # TODO: 2. CHANGE THIS DESCRIPTION
     """
-    My service model
+    This service uses langchain to vectorize documents into a FAISS vectorstore.
     """
 
     # Any additional fields must be excluded for Pydantic to work
@@ -36,58 +50,74 @@ class MyService(Service):
 
     def __init__(self):
         super().__init__(
-            # TODO: 3. CHANGE THE SERVICE NAME AND SLUG
-            name="My Service",
-            slug="my-service",
+            name="document-vectorizer",
+            slug="document-vectorizer",
             url=settings.service_url,
             summary=api_summary,
             description=api_description,
             status=ServiceStatus.AVAILABLE,
-            # TODO: 4. CHANGE THE INPUT AND OUTPUT FIELDS, THE TAGS AND THE HAS_AI VARIABLE
             data_in_fields=[
-                FieldDescription(name="image", type=[FieldDescriptionType.IMAGE_PNG, FieldDescriptionType.IMAGE_JPEG]),
+                FieldDescription(
+                    name="Document",
+                    type=[
+                        FieldDescriptionType.APPLICATION_PDF,
+                    ],
+                ),
             ],
             data_out_fields=[
-                FieldDescription(name="result", type=[FieldDescriptionType.APPLICATION_JSON]),
+                FieldDescription(name="result", type=[FieldDescriptionType.TEXT_PLAIN]),
             ],
             tags=[
                 ExecutionUnitTag(
-                    name=ExecutionUnitTagName.IMAGE_PROCESSING,
-                    acronym=ExecutionUnitTagAcronym.IMAGE_PROCESSING,
+                    name=ExecutionUnitTagName.NATURAL_LANGUAGE_PROCESSING,
+                    acronym=ExecutionUnitTagAcronym.NATURAL_LANGUAGE_PROCESSING,
                 ),
             ],
-            has_ai=False,
+            has_ai=True,
         )
         self.logger = get_logger(settings)
+        self.embedding_model = HuggingFaceBgeEmbeddings(
+            model_name="BAAI/bge-large-en-v1.5",
+            model_kwargs={"device": "cpu"},
+            encode_kwargs={"normalize_embeddings": True},
+        )
+        self.vector_path = "./vectorstore"
 
-    # TODO: 5. CHANGE THE PROCESS METHOD (CORE OF THE SERVICE)
     def process(self, data):
-        # NOTE that the data is a dictionary with the keys being the field names set in the data_in_fields
-        raw = data["image"].data
-        input_type = data["image"].type
-        # ... do something with the raw data
+        raw = data["Document"].data
+        input_type = data["Document"].type
 
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=500,
+            chunk_overlap=100,  # replace magic numbers by input parameters relevant?
+        )
+        loader = PyMuPDFLoader(raw)
+        doc = loader.load_and_split(text_splitter)
+        vectorstore = FAISS.from_documents(
+            documents=doc,
+            embedding=self.embedding_model,
+        )
+        if os.path.exists(self.vector_path):
+            shutil.rmtree(self.vector_path)
+        vectorstore.save(self.vector_path)
+        # TODO: how to return the vectorstore?
         # NOTE that the result must be a dictionary with the keys being the field names set in the data_out_fields
         return {
-            "result": TaskData(
-                data=...,
-                type=FieldDescriptionType.APPLICATION_JSON
-            )
+            "result": TaskData(data=..., type=FieldDescriptionType.APPLICATION_JSON)
         }
 
 
 # TODO: 6. CHANGE THE API DESCRIPTION AND SUMMARY
 api_description = """My service
-bla bla bla...
+This service uses langchain to vectorize documents into a FAISS vectorstore.
 """
 api_summary = """My service
-bla bla bla...
+This service uses langchain to vectorize documents into a FAISS vectorstore.
 """
 
 # Define the FastAPI application with information
-# TODO: 7. CHANGE THE API TITLE, VERSION, CONTACT AND LICENSE
 app = FastAPI(
-    title="Sample Service API.",
+    title="Document vectorizer API.",
     description=api_description,
     version="0.0.1",
     contact={
@@ -106,8 +136,8 @@ app = FastAPI(
 )
 
 # Include routers from other files
-app.include_router(service_router, tags=['Service'])
-app.include_router(tasks_router, tags=['Tasks'])
+app.include_router(service_router, tags=["Service"])
+app.include_router(tasks_router, tags=["Tasks"])
 
 app.add_middleware(
     CORSMiddleware,
@@ -122,6 +152,7 @@ app.add_middleware(
 @app.get("/", include_in_schema=False)
 async def root():
     return RedirectResponse("/docs", status_code=301)
+
 
 service_service: ServiceService | None = None
 
@@ -152,13 +183,17 @@ async def startup_event():
         for engine_url in settings.engine_urls:
             announced = False
             while not announced and retries > 0:
-                announced = await service_service.announce_service(my_service, engine_url)
+                announced = await service_service.announce_service(
+                    my_service, engine_url
+                )
                 retries -= 1
                 if not announced:
                     time.sleep(settings.engine_announce_retry_delay)
                     if retries == 0:
-                        logger.warning(f"Aborting service announcement after "
-                                       f"{settings.engine_announce_retries} retries")
+                        logger.warning(
+                            f"Aborting service announcement after "
+                            f"{settings.engine_announce_retries} retries"
+                        )
 
     # Announce the service to its engine
     asyncio.ensure_future(announce())

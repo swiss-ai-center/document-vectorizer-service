@@ -1,23 +1,23 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: my-service-stateful
+  name: document-vectorizer-stateful
   labels:
-    app: my-service
+    app: document-vectorizer
 spec:
-  serviceName: my-service
+  serviceName: document-vectorizer
   replicas: 1
   selector:
     matchLabels:
-      app: my-service
+      app: document-vectorizer
   template:
     metadata:
       labels:
-        app: my-service
+        app: document-vectorizer
     spec:
       containers:
-      - name: my-service
-        image: ghcr.io/organization/my-service:latest
+      - name: document-vectorizer
+        image: ghcr.io/organization/document-vectorizer:latest
         # If you build the image locally, change the next line to `imagePullPolicy: Never` - there is no need to pull the image
         imagePullPolicy: Always
         ports:
@@ -25,4 +25,4 @@ spec:
           containerPort: 80
         envFrom:
           - configMapRef:
-              name: my-service-config
+              name: document-vectorizer-config
