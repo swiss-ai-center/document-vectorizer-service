@@ -25,15 +25,12 @@ from common_code.common.models import FieldDescription, ExecutionUnitTag
 # Imports required by the service's model
 from langchain.document_loaders import PyMuPDFLoader
 from langchain.vectorstores import FAISS
-from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.embeddings import HuggingFaceBgeEmbeddings
-from langchain.callbacks.manager import CallbackManager
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
-from langchain.chains import RetrievalQA
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.schema.document import Document
 import shutil
 import os
+import zipfile
+from io import BytesIO
 
 
 settings = get_settings()
@@ -47,6 +44,8 @@ class MyService(Service):
     # Any additional fields must be excluded for Pydantic to work
     model: object = Field(exclude=True)
     logger: object = Field(exclude=True)
+    embedding_model: object = Field(exclude=True)
+    vector_path: object = Field(exclude=True)
 
     def __init__(self):
         super().__init__(
@@ -58,7 +57,7 @@ class MyService(Service):
             status=ServiceStatus.AVAILABLE,
             data_in_fields=[
                 FieldDescription(
-                    name="Document",
+                    name="document",
                     type=[
                         FieldDescriptionType.APPLICATION_PDF,
                     ],
@@ -84,12 +83,11 @@ class MyService(Service):
         self.vector_path = "./vectorstore"
 
     def process(self, data):
-        raw = data["Document"].data
-        input_type = data["Document"].type
+        raw = data["document"].data
 
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=500,
-            chunk_overlap=100,  # replace magic numbers by input parameters relevant?
+            chunk_overlap=100,
         )
         loader = PyMuPDFLoader(raw)
         doc = loader.load_and_split(text_splitter)
@@ -100,18 +98,29 @@ class MyService(Service):
         if os.path.exists(self.vector_path):
             shutil.rmtree(self.vector_path)
         vectorstore.save(self.vector_path)
-        # TODO: how to return the vectorstore?
-        # NOTE that the result must be a dictionary with the keys being the field names set in the data_out_fields
+
+        zip_buffer = BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
+            for root, _, files in os.walk(self.vector_path):
+                for file in files:
+                    zipf.write(
+                        os.path.join(root, file),
+                        os.path.relpath(
+                            os.path.join(root, file),
+                            os.path.join(self.vector_path, ".."),
+                        ),
+                    )
         return {
-            "result": TaskData(data=..., type=FieldDescriptionType.APPLICATION_JSON)
+            "result": TaskData(
+                data=zip_buffer.getvalue(), type=FieldDescriptionType.TEXT_PLAIN
+            )
         }
 
 
-# TODO: 6. CHANGE THE API DESCRIPTION AND SUMMARY
-api_description = """My service
+api_description = """
 This service uses langchain to vectorize documents into a FAISS vectorstore.
 """
-api_summary = """My service
+api_summary = """
 This service uses langchain to vectorize documents into a FAISS vectorstore.
 """
 
