@@ -89,7 +89,11 @@ class MyService(Service):
             chunk_size=500,
             chunk_overlap=100,
         )
-        loader = PyMuPDFLoader(raw)
+
+        # raw content as PDF temp file
+        with open("temp.pdf", "wb") as f:
+            f.write(raw)
+        loader = PyMuPDFLoader("temp.pdf")
         doc = loader.load_and_split(text_splitter)
         vectorstore = FAISS.from_documents(
             documents=doc,
