@@ -90,9 +90,13 @@ class MyService(Service):
             chunk_overlap=100,
         )
 
+        if os.path.exists("temp.pdf"):
+            os.remove("temp.pdf")
+
         # raw content as PDF temp file
         with open("temp.pdf", "wb") as f:
             f.write(raw)
+
         loader = PyMuPDFLoader("temp.pdf")
         doc = loader.load_and_split(text_splitter)
         vectorstore = FAISS.from_documents(
@@ -101,7 +105,7 @@ class MyService(Service):
         )
         if os.path.exists(self.vector_path):
             shutil.rmtree(self.vector_path)
-        vectorstore.save(self.vector_path)
+        vectorstore.save_local(self.vector_path)
 
         zip_buffer = BytesIO()
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
