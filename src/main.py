@@ -49,7 +49,7 @@ class MyService(Service):
 
     def __init__(self):
         super().__init__(
-            name="document-vectorizer",
+            name="Document Vectorizer",
             slug="document-vectorizer",
             url=settings.service_url,
             summary=api_summary,
@@ -134,7 +134,7 @@ This service uses langchain to vectorize documents into a FAISS vectorstore.
 
 # Define the FastAPI application with information
 app = FastAPI(
-    title="Document vectorizer API.",
+    title="Document Vectorizer API.",
     description=api_description,
     version="0.0.1",
     contact={
