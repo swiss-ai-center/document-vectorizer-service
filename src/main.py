@@ -64,7 +64,9 @@ class MyService(Service):
                 ),
             ],
             data_out_fields=[
-                FieldDescription(name="result", type=[FieldDescriptionType.TEXT_PLAIN]),
+                FieldDescription(
+                    name="result", type=[FieldDescriptionType.APPLICATION_ZIP]
+                ),
             ],
             tags=[
                 ExecutionUnitTag(
@@ -120,7 +122,7 @@ class MyService(Service):
                     )
         return {
             "result": TaskData(
-                data=zip_buffer.getvalue(), type=FieldDescriptionType.TEXT_PLAIN
+                data=zip_buffer.getvalue(), type=FieldDescriptionType.APPLICATION_ZIP
             )
         }
 
