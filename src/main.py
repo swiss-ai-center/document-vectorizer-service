@@ -3,10 +3,10 @@ import time
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
+from contextlib import asynccontextmanager
 from common_code.config import get_settings
-from pydantic import Field
 from common_code.http_client import HttpClient
-from common_code.logger.logger import get_logger
+from common_code.logger.logger import get_logger, Logger
 from common_code.service.controller import router as service_router
 from common_code.service.service import ServiceService
 from common_code.storage.service import StorageService
@@ -42,10 +42,10 @@ class MyService(Service):
     """
 
     # Any additional fields must be excluded for Pydantic to work
-    model: object = Field(exclude=True)
-    logger: object = Field(exclude=True)
-    embedding_model: object = Field(exclude=True)
-    vector_path: object = Field(exclude=True)
+    _model: object
+    _logger: Logger
+    _embedding_model: object
+    _vector_path: object
 
     def __init__(self):
         super().__init__(
@@ -76,13 +76,13 @@ class MyService(Service):
             ],
             has_ai=True,
         )
-        self.logger = get_logger(settings)
-        self.embedding_model = HuggingFaceBgeEmbeddings(
+        self._logger = get_logger(settings)
+        self._embedding_model = HuggingFaceBgeEmbeddings(
             model_name="BAAI/bge-large-en-v1.5",
             model_kwargs={"device": "cpu"},
             encode_kwargs={"normalize_embeddings": True},
         )
-        self.vector_path = "./vectorstore"
+        self._vector_path = "./vectorstore"
 
     def process(self, data):
         raw = data["document"].data
@@ -103,21 +103,21 @@ class MyService(Service):
         doc = loader.load_and_split(text_splitter)
         vectorstore = FAISS.from_documents(
             documents=doc,
-            embedding=self.embedding_model,
+            embedding=self._embedding_model,
         )
-        if os.path.exists(self.vector_path):
-            shutil.rmtree(self.vector_path)
-        vectorstore.save_local(self.vector_path)
+        if os.path.exists(self._vector_path):
+            shutil.rmtree(self._vector_path)
+        vectorstore.save_local(self._vector_path)
 
         zip_buffer = BytesIO()
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
-            for root, _, files in os.walk(self.vector_path):
+            for root, _, files in os.walk(self._vector_path):
                 for file in files:
                     zipf.write(
                         os.path.join(root, file),
                         os.path.relpath(
                             os.path.join(root, file),
-                            os.path.join(self.vector_path, ".."),
+                            os.path.join(self._vector_path, ".."),
                         ),
                     )
         return {
@@ -127,63 +127,16 @@ class MyService(Service):
         }
 
 
-api_description = """
-This service uses langchain to vectorize documents into a FAISS vectorstore.
-You can chat with your vectorized documents using the
-[Swiss Ai chatbot](https://chatbot-ollama-swiss-ai-center.kube.isc.heia-fr.ch/).
-"""
-api_summary = """
-This service uses langchain to vectorize documents into a FAISS vectorstore.
-"""
-
-# Define the FastAPI application with information
-app = FastAPI(
-    title="Document Vectorizer API.",
-    description=api_description,
-    version="0.0.1",
-    contact={
-        "name": "Swiss AI Center",
-        "url": "https://swiss-ai-center.ch/",
-        "email": "info@swiss-ai-center.ch",
-    },
-    swagger_ui_parameters={
-        "tagsSorter": "alpha",
-        "operationsSorter": "method",
-    },
-    license_info={
-        "name": "GNU Affero General Public License v3.0 (GNU AGPLv3)",
-        "url": "https://choosealicense.com/licenses/agpl-3.0/",
-    },
-)
-
-# Include routers from other files
-app.include_router(service_router, tags=["Service"])
-app.include_router(tasks_router, tags=["Tasks"])
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-# Redirect to docs
-@app.get("/", include_in_schema=False)
-async def root():
-    return RedirectResponse("/docs", status_code=301)
-
-
 service_service: ServiceService | None = None
 
 
-@app.on_event("startup")
-async def startup_event():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     # Manual instances because startup events doesn't support Dependency Injection
     # https://github.com/tiangolo/fastapi/issues/2057
     # https://github.com/tiangolo/fastapi/issues/425
 
+    # Startup
     # Global variable
     global service_service
 
@@ -219,11 +172,58 @@ async def startup_event():
     # Announce the service to its engine
     asyncio.ensure_future(announce())
 
+    yield
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    # Global variable
-    global service_service
-    my_service = MyService()
+    # Shutdown
+
     for engine_url in settings.engine_urls:
         await service_service.graceful_shutdown(my_service, engine_url)
+
+
+api_description = """
+This service uses langchain to vectorize documents into a FAISS vectorstore.
+You can chat with your vectorized documents using the
+Swiss Ai chatbot in https://chatbot-ollama-swiss-ai-center.kube.isc.heia-fr.ch/
+"""
+api_summary = """
+This service uses langchain to vectorize documents into a FAISS vectorstore.
+"""
+
+# Define the FastAPI application with information
+app = FastAPI(
+    lifespan=lifespan,
+    title="Document Vectorizer API.",
+    description=api_description,
+    version="0.0.1",
+    contact={
+        "name": "Swiss AI Center",
+        "url": "https://swiss-ai-center.ch/",
+        "email": "info@swiss-ai-center.ch",
+    },
+    swagger_ui_parameters={
+        "tagsSorter": "alpha",
+        "operationsSorter": "method",
+    },
+    license_info={
+        "name": "GNU Affero General Public License v3.0 (GNU AGPLv3)",
+        "url": "https://choosealicense.com/licenses/agpl-3.0/",
+    },
+)
+
+# Include routers from other files
+app.include_router(service_router, tags=["Service"])
+app.include_router(tasks_router, tags=["Tasks"])
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# Redirect to docs
+@app.get("/", include_in_schema=False)
+async def root():
+    return RedirectResponse("/docs", status_code=301)
