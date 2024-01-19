@@ -3,18 +3,20 @@ aiofiles==22.1.0
 aiohttp==3.9.1
 aioitertools==0.11.0
 aiosignal==1.3.1
+annotated-types==0.6.0
 anyio==3.7.1
 attrs==23.2.0
 botocore==1.27.59
 certifi==2023.11.17
 charset-normalizer==3.3.2
 click==8.1.7
+common_code @ git+https://github.com/swiss-ai-center/common-code.git@3a187040dbe320322f9314d64d4398fdd72c512e
 coverage==7.4.0
 dataclasses-json==0.6.3
 dnspython==2.4.2
-email-validator==1.3.0
+email-validator==2.1.0.post1
 faiss-cpu==1.7.4
-fastapi==0.87.0
+fastapi==0.108.0
 filelock==3.13.1
 flake8==5.0.4
 frozenlist==1.4.1
@@ -58,7 +60,9 @@ packaging==23.2
 pillow==10.2.0
 pluggy==1.3.0
 pycodestyle==2.9.1
-pydantic==1.10.13
+pydantic==2.5.3
+pydantic-settings==2.1.0
+pydantic_core==2.14.6
 pyflakes==2.5.0
 PyMuPDF==1.23.6
 PyMuPDFb==1.23.6
@@ -81,7 +85,7 @@ sentencepiece==0.1.99
 six==1.16.0
 sniffio==1.3.0
 SQLAlchemy==2.0.25
-starlette==0.21.0
+starlette==0.32.0.post1
 sympy==1.12
 tenacity==8.2.3
 threadpoolctl==3.2.0
