@@ -32,7 +32,6 @@ import os
 import zipfile
 from io import BytesIO
 
-
 settings = get_settings()
 
 
@@ -136,10 +135,10 @@ async def lifespan(app: FastAPI):
     # https://github.com/tiangolo/fastapi/issues/2057
     # https://github.com/tiangolo/fastapi/issues/425
 
-    # Startup
     # Global variable
     global service_service
 
+    # Startup
     logger = get_logger(settings)
     http_client = HttpClient()
     storage_service = StorageService(logger)

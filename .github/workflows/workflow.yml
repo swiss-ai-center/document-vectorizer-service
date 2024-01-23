@@ -1,5 +1,5 @@
 # Documentation: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsuses
-name: github_worflow
+name: github_workflow
 run-name: GitHub Workflow
 
 env:
@@ -45,7 +45,7 @@ env:
 
 # Allow one concurrent deployment
 concurrency:
-  group: github_worflow
+  group: github_workflow
   cancel-in-progress: true
 
 on:
