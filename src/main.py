@@ -74,6 +74,7 @@ class MyService(Service):
                 ),
             ],
             has_ai=True,
+            docs_url="https://docs.swiss-ai-center.ch/reference/services/document-vectorizer/",
         )
         self._logger = get_logger(settings)
         self._embedding_model = HuggingFaceBgeEmbeddings(
