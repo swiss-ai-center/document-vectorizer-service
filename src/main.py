@@ -183,7 +183,7 @@ async def lifespan(app: FastAPI):
 api_description = """
 This service uses langchain to vectorize documents into a FAISS vectorstore.
 You can chat with your vectorized documents using the
-Swiss AI Center's chatbot at https://chatbot.swiss-ai-center.ch/.
+Swiss AI Center's [chatbot](https://chatbot.swiss-ai-center.ch/).
 """
 api_summary = """
 This service uses langchain to vectorize documents into a FAISS vectorstore.
