@@ -1,6 +1,6 @@
 common-code[test] @ git+https://github.com/swiss-ai-center/common-code.git@main
-langchain==0.0.332
-pypdf==3.17.1
-sentence-transformers==2.2.2
-faiss-cpu==1.7.4
-PyMuPDF==1.23.6
+langchain==0.1.13
+pypdf==4.1.0
+sentence-transformers==2.6.1
+faiss-cpu==1.8.0
+PyMuPDF==1.24.0
