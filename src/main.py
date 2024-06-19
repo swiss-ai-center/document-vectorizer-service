@@ -73,8 +73,8 @@ class MyService(Service):
                     acronym=ExecutionUnitTagAcronym.NATURAL_LANGUAGE_PROCESSING,
                 ),
                 ExecutionUnitTag(
-                    name=ExecutionUnitTagName.DATA_PREPROCESSING,
-                    acronym=ExecutionUnitTagAcronym.DATA_PREPROCESSING,
+                    name=ExecutionUnitTagName.DOCUMENT_PROCESSING,
+                    acronym=ExecutionUnitTagAcronym.DOCUMENT_PROCESSING,
                 ),
             ],
             has_ai=True,
