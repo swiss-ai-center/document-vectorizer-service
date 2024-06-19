@@ -72,6 +72,10 @@ class MyService(Service):
                     name=ExecutionUnitTagName.NATURAL_LANGUAGE_PROCESSING,
                     acronym=ExecutionUnitTagAcronym.NATURAL_LANGUAGE_PROCESSING,
                 ),
+                ExecutionUnitTag(
+                    name=ExecutionUnitTagName.DATA_PREPROCESSING,
+                    acronym=ExecutionUnitTagAcronym.DATA_PREPROCESSING,
+                ),
             ],
             has_ai=True,
             docs_url="https://docs.swiss-ai-center.ch/reference/services/document-vectorizer/",
