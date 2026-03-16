@@ -28,6 +28,7 @@ This service uses langchain to vectorize documents into a FAISS vectorstore.
 api_title = "Document Vectorizer API."
 version = "0.0.1"
 
+
 class MyService(Service):
     """
     This service uses langchain to vectorize documents into a FAISS vectorstore.
@@ -122,4 +123,3 @@ class MyService(Service):
                 data=zip_buffer.getvalue(), type=FieldDescriptionType.APPLICATION_ZIP
             )
         }
-
