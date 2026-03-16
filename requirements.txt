@@ -1,3 +1,4 @@
+# @Deprecated: This file is deprecated. Please use pyproject.toml instead.
 common-code[test] @ git+https://github.com/swiss-ai-center/common-code.git@main
 langchain==0.1.13
 pypdf==4.1.0
